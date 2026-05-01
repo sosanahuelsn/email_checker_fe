@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/check";
 
 const RISK_COLORS = {
   low: { bg: "#1a3a2a", text: "#4ade80", label: "BAJO" },
@@ -114,11 +114,14 @@ export default function App() {
             {result.breaches.sources.length > 0 && (
               <div style={styles.section}>
                 <h3 style={styles.sectionTitle}>Filtraciones detectadas</h3>
+                {result.breaches.sources.some(b => b.date && parseInt(b.date) <= new Date().getFullYear() - 3) && (
+                  <p style={styles.infoText}>⚠ Revisá las fechas — si ya cambiaste tu contraseña, el riesgo es menor.</p>
+                )}
                 <div style={styles.breachList}>
                   {result.breaches.sources.slice(0, 10).map((b, i) => (
                     <span key={i} style={styles.breachTag}>
                       <span>{b.name}</span>
-                      {b.date && <span style={{ color: "#64748b", fontSize: 11, display: "block", textAlign: "center"}}>{b.date}</span>}
+                      {b.date && <span style={{ color: "#64748b", fontSize: 11, display: "block", textAlign: "center" }}>{b.date}</span>}
                     </span>
                   ))}
                   {result.breaches.sources.length > 10 && (
@@ -207,4 +210,13 @@ const styles = {
     display: "flex", gap: 24,
   },
   footerLink: { color: "#475569", fontSize: 13, textDecoration: "none" },
+  breachTagMore: {
+    padding: "4px 10px", borderRadius: 6, background: "#2d3748",
+    fontSize: 12, color: "#60a5fa",
+  },
+  infoText: {
+    fontSize: 12,
+    color: "#64748b",
+    marginBottom: 10,
+  },
 };
