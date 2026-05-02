@@ -21,8 +21,12 @@ export default function App() {
   const [error, setError] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  const [analyzed, setAnalyzed] = useState(false);
+  const [aiUsed, setAiUsed] = useState(false);
+  const [showAllExposure, setShowAllExposure] = useState(false);
 
   const handleAnalysis = async () => {
+    if (loadingAnalysis || aiUsed) return;
     setLoadingAnalysis(true);
     setAnalysis(null);
     try {
@@ -33,6 +37,7 @@ export default function App() {
       });
       const data = await res.json();
       setAnalysis(data.analysis);
+      setAiUsed(true);
     } catch (e) {
       setAnalysis("No se pudo obtener el análisis.");
     } finally {
@@ -41,7 +46,7 @@ export default function App() {
   };
 
   const handleCheck = async () => {
-    if (!email) return;
+    if (!email || loading || analyzed) return;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -57,6 +62,8 @@ export default function App() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setAnalysis(null);
+    setAiUsed(false);
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -65,6 +72,7 @@ export default function App() {
       });
       const data = await res.json();
       setResult(data);
+      setAnalyzed(true);
     } catch (e) {
       setError("No se pudo conectar con la API.");
     } finally {
@@ -89,10 +97,14 @@ export default function App() {
             type="email"
             placeholder="tucorreo@email.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCheck()}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setAnalyzed(false);
+              setShowAllExposure(false);
+            }}
           />
-          <button style={styles.button} onClick={handleCheck} disabled={loading}>
+          <button style={{ ...styles.button, opacity: analyzed || loading ? 0.5 : 1 }} onClick={handleCheck} disabled={loading || analyzed}>
             {loading ? "Analizando..." : "Analizar"}
           </button>
         </div>
@@ -131,6 +143,23 @@ export default function App() {
               ))}
             </div>
 
+            {result.exposure.results.length > 0 && (
+              <div style={styles.section}>
+                <h3 style={styles.sectionTitle}>Exposición pública detectada</h3>
+                {(showAllExposure ? result.exposure.results : result.exposure.results.slice(0, 3)).map((r, i) => (
+                  <div key={i} style={{ marginBottom: 10 }}>
+                    <a href={r.link} target="_blank" style={styles.exposureLink}>{r.title}</a>
+                    <p style={styles.exposureSnippet}>{r.snippet}</p>
+                  </div>
+                ))}
+                {result.exposure.results.length > 3 && (
+                  <button onClick={() => setShowAllExposure(!showAllExposure)} style={styles.showMoreButton}>
+                    {showAllExposure ? "Ver menos" : `Ver ${result.exposure.results.length - 3} más`}
+                  </button>
+                )}
+              </div>
+            )}
+
             {result.breaches.sources.length > 0 && (
               <div style={styles.section}>
                 <h3 style={styles.sectionTitle}>Filtraciones detectadas</h3>
@@ -152,7 +181,7 @@ export default function App() {
             )}
 
             <div style={styles.section}>
-              <button style={styles.analysisButton} onClick={handleAnalysis} disabled={loadingAnalysis}>
+              <button style={{ ...styles.analysisButton, opacity: aiUsed || loadingAnalysis ? 0.5 : 1 }} onClick={handleAnalysis} disabled={aiUsed || loadingAnalysis}>
                 {loadingAnalysis ? "Analizando con IA..." : "Ver análisis detallado con IA"}
               </button>
               {analysis && <p style={styles.analysisText}>{analysis}</p>}
@@ -237,10 +266,6 @@ const styles = {
     display: "flex", gap: 24,
   },
   footerLink: { color: "#475569", fontSize: 13, textDecoration: "none" },
-  breachTagMore: {
-    padding: "4px 10px", borderRadius: 6, background: "#2d3748",
-    fontSize: 12, color: "#60a5fa",
-  },
   infoText: {
     fontSize: 12,
     color: "#64748b",
@@ -255,5 +280,17 @@ const styles = {
     marginTop: 14, fontSize: 14, color: "#cbd5e1",
     lineHeight: 1.7, borderLeft: "2px solid #3b82f6",
     paddingLeft: 12,
+  },
+  exposureLink: {
+    fontSize: 13, color: "#60a5fa", textDecoration: "none",
+    display: "block", marginBottom: 4,
+  },
+  exposureSnippet: {
+    fontSize: 12, color: "#64748b", lineHeight: 1.5, margin: 0,
+  },
+  showMoreButton: {
+    background: "none", border: "1px solid #3b82f6", color: "#60a5fa",
+    fontSize: 13, cursor: "pointer", padding: "6px 14px",
+    borderRadius: 8, marginTop: 4,
   },
 };
