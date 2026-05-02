@@ -19,6 +19,26 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+
+  const handleAnalysis = async () => {
+    setLoadingAnalysis(true);
+    setAnalysis(null);
+    try {
+      const res = await fetch(API_URL.replace("/check", "/analyze"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      setAnalysis(data.analysis);
+    } catch (e) {
+      setAnalysis("No se pudo obtener el análisis.");
+    } finally {
+      setLoadingAnalysis(false);
+    }
+  };
 
   const handleCheck = async () => {
     if (!email) return;
@@ -130,6 +150,13 @@ export default function App() {
                 </div>
               </div>
             )}
+
+            <div style={styles.section}>
+              <button style={styles.analysisButton} onClick={handleAnalysis} disabled={loadingAnalysis}>
+                {loadingAnalysis ? "Analizando con IA..." : "Ver análisis detallado con IA"}
+              </button>
+              {analysis && <p style={styles.analysisText}>{analysis}</p>}
+            </div>
           </div>
         )}
       </div>
@@ -218,5 +245,15 @@ const styles = {
     fontSize: 12,
     color: "#64748b",
     marginBottom: 10,
+  },
+  analysisButton: {
+    width: "100%", padding: "12px", borderRadius: 10,
+    border: "1px solid #3b82f6", background: "transparent",
+    color: "#60a5fa", fontSize: 14, fontWeight: 600, cursor: "pointer",
+  },
+  analysisText: {
+    marginTop: 14, fontSize: 14, color: "#cbd5e1",
+    lineHeight: 1.7, borderLeft: "2px solid #3b82f6",
+    paddingLeft: 12,
   },
 };
