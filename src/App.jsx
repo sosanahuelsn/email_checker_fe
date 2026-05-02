@@ -87,7 +87,7 @@ export default function App() {
           <input
             style={styles.input}
             type="email"
-            placeholder="tucorreo@gmail.com"
+            placeholder="tucorreo@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCheck()}
